@@ -22,6 +22,7 @@ public:
 	enum Angle_LR { Left, Right };
 	Angle_LR	angle_LR;
 	WP			target;
+	string eventFileName;
 
 	//メンバ変数に最低限の初期化を行う
 	//★★メンバ変数を追加したら必ず初期化も追加する事★★

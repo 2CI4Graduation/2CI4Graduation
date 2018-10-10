@@ -1,0 +1,16 @@
+if>ev_flag,“GAƒAƒCƒeƒ€¶¬ == 0,‚P‰ñ–Ú
+
+label>‚P‰ñ–Ú
+map>./data/Map/map0.txt
+appear>Enemy00,500,90
+appear>Enemy01,600,90,maxFallSpeed = 1
+appear>Item00,100,80, eventFileName = ./data/event/event0013.txt
+appear>Item00,200,80, eventFileName = ./data/event/event0013.txt
+appear>Item00,300,80, eventFileName = ./data/event/event0013.txt
+appear>Item01,150,80
+appear>Item01,150,160
+appear>Item01,150,240
+appear>Item02,250,80
+flag>“GAƒAƒCƒeƒ€¶¬ + 1
+end>
+

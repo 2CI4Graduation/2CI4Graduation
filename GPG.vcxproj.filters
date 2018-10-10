@@ -53,6 +53,9 @@
     <Filter Include="MyPG\Tasks\Ending">
       <UniqueIdentifier>{a2d26059-acd0-414f-be92-90ecc7022a75}</UniqueIdentifier>
     </Filter>
+    <Filter Include="MyPG\Tasks\Event">
+      <UniqueIdentifier>{32930e47-cdb6-4a32-a173-588f9a486987}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="myLib.cpp">
@@ -127,6 +130,27 @@
     <ClCompile Include="BChara.cpp">
       <Filter>MyPG</Filter>
     </ClCompile>
+    <ClCompile Include="Task_Ev_FadeInOut.cpp">
+      <Filter>MyPG\Tasks\Event</Filter>
+    </ClCompile>
+    <ClCompile Include="Task_Ev_Image.cpp">
+      <Filter>MyPG\Tasks\Event</Filter>
+    </ClCompile>
+    <ClCompile Include="Task_Ev_Message.cpp">
+      <Filter>MyPG\Tasks\Event</Filter>
+    </ClCompile>
+    <ClCompile Include="Task_Ev_System.cpp">
+      <Filter>MyPG\Tasks\Event</Filter>
+    </ClCompile>
+    <ClCompile Include="Task_EventEngine.cpp">
+      <Filter>MyPG\Tasks\Event</Filter>
+    </ClCompile>
+    <ClCompile Include="AppearObject.cpp">
+      <Filter>MyPG\Tasks\Event</Filter>
+    </ClCompile>
+    <ClCompile Include="Dm2008_Ver1_3.cpp">
+      <Filter>MyPG</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="myLib.h">
@@ -196,6 +220,24 @@
       <Filter>MyPG\Tasks\Game</Filter>
     </ClInclude>
     <ClInclude Include="BChara.h">
+      <Filter>MyPG</Filter>
+    </ClInclude>
+    <ClInclude Include="Task_Ev_FadeInOut.h">
+      <Filter>MyPG\Tasks\Event</Filter>
+    </ClInclude>
+    <ClInclude Include="Task_Ev_Image.h">
+      <Filter>MyPG\Tasks\Event</Filter>
+    </ClInclude>
+    <ClInclude Include="Task_Ev_Message.h">
+      <Filter>MyPG\Tasks\Event</Filter>
+    </ClInclude>
+    <ClInclude Include="Task_EventEngine.h">
+      <Filter>MyPG\Tasks\Event</Filter>
+    </ClInclude>
+    <ClInclude Include="AppearObject.h">
+      <Filter>MyPG\Tasks\Event</Filter>
+    </ClInclude>
+    <ClInclude Include="Dm2008_Ver1_3.h">
       <Filter>MyPG</Filter>
     </ClInclude>
   </ItemGroup>

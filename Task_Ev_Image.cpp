@@ -1,13 +1,10 @@
 //-------------------------------------------------------------------
-//ゲーム本編
+//
 //-------------------------------------------------------------------
 #include  "MyPG.h"
-#include  "Task_Game.h"
-#include  "Task_Ending.h"
-#include  "Task_Map2D.h"
-#include  "Task_Player.h"
-#include  "Task_EventEngine.h"
-namespace  Game
+#include  "Task_Ev_Image.h"
+
+namespace  Ev_Image
 {
 	Resource::WP  Resource::instance;
 	//-------------------------------------------------------------------
@@ -32,20 +29,12 @@ namespace  Game
 		this->res = Resource::Create();
 
 		//★データ初期化
-		ge->camera2D = ML::Box2D(-200, -100, 480, 270);//取りあえず初期値設定
-		ge->evFlags.clear();
+		this->render2D_Priority[1] = 0.2f;
+		this->imageName = "";
+		this->pos = ML::Vec2(0, 0);
+		this->drawBase = ML::Box2D(0, 0, 0, 0);
+		this->src = ML::Box2D(0, 0, 0, 0);
 		//★タスクの生成
-		//マップの生成
-		/*if (auto ev = EventEngine::Object::Create_Mutex())
-		{
-			ev->Set("./data/event/map0.txt");
-		}*/
-		auto  m = Map2D::Object::Create(true);
-		m->Load("./data/Map/map0.txt");
-		//プレイヤの生成
-		auto  pl = Player::Object::Create(true);
-		pl->pos.x = 480 / 2;
-		pl->pos.y = 270 * 2 / 3;
 
 		return  true;
 	}
@@ -54,15 +43,13 @@ namespace  Game
 	bool  Object::Finalize()
 	{
 		//★データ＆タスク解放
-		ge->KillAll_G("フィールド");
-		ge->KillAll_G("プレイヤ");
-		ge->KillAll_G("イベント");
-		ge->KillAll_G("メッセージ表示枠");
-		ge->KillAll_G("イベント画像");
 
+		if (this->imageName!="")
+		{
+			DG::Image_Erase(this->imageName);
+		}
 		if (!ge->QuitFlag() && this->nextTaskCreate) {
 			//★引き継ぎタスクの生成
-			auto  nextTask = Ending::Object::Create(true);
 		}
 
 		return  true;
@@ -71,18 +58,132 @@ namespace  Game
 	//「更新」１フレーム毎に行う処理
 	void  Object::UpDate()
 	{
-		auto in = DI::GPad_GetState("P1");
-		if (in.ST.down) {
-			//自身に消滅要請
-			this->Kill();
-		}
 	}
 	//-------------------------------------------------------------------
 	//「２Ｄ描画」１フレーム毎に行う処理
 	void  Object::Render2D_AF()
 	{
+		ML::Box2D draw = this->drawBase;
+		draw.Offset(this->pos);
+		DG::Image_Draw(this->imageName, draw, this->src);
 	}
+	//----------------------------------------------------------
 
+	//タスクを生成するか、どうめいのタスクの情報を更新する
+	void Object::CreateOrReset(stringstream& ss_)
+	{
+		//パラメータを分解する
+		string taskName;
+		ss_ >> taskName;
+		//新規作成か更新かの判別
+		auto p = ge->GetTask_One_GN<Object>("イベント画像", taskName);
+
+		//新規作成の場合
+		if (nullptr == p)
+		{
+			p = Object::Create(true);
+			p->Set(taskName, ss_);
+
+
+		}
+		//更新の場合
+		else
+		{
+			p->Set(taskName, ss_);
+		}
+	 }
+
+	//表示するメッセージを設定する
+	void Object::Set(const string& taskName_, stringstream& ss_)
+	{
+		//パラメータを分解する
+		string filePath;
+		ss_ >> filePath;
+		//画像表示解除にたいおうする
+		if (filePath=="off")
+		{
+			this->Kill();
+			return;
+		}
+		//タスク名を設定
+		this->name = taskName_;
+		//イメージ名を設定
+		this->imageName = this->groupName + this->name + "Img";
+		//画像読み込み
+		DG::Image_Create(this->imageName, filePath);
+		
+		//表示位置・向きを読み込み
+		enum XPosition
+		{
+			Left,Center,Right
+		};
+		XPosition xPos = Left;//表示位置
+		bool xRevers = false;//画像反転
+		bool yRevers = false;//画像反転
+		string posAndRev;
+		ss_>> posAndRev;
+		//寄せ・反転の指定
+		if (string::npos!=posAndRev.find("L"))
+		{
+			xPos = Left;
+		}
+		if (string::npos != posAndRev.find("R"))
+		{
+			xPos = Right;
+		}
+		if (string::npos != posAndRev.find("C"))
+		{
+			xPos = Center;
+		}
+		if (string::npos != posAndRev.find("X"))
+		{
+			xRevers = true;
+		}
+		else
+		{
+			xRevers =false;
+		}
+		if (string::npos != posAndRev.find("Y"))
+		{
+			yRevers = true;
+		}
+		else
+		{
+			yRevers = false;
+		}
+
+		//画像のサイズからいちを設定
+		POINT s = DG::Image_Size(this->imageName);
+		this->drawBase = ML::Box2D(0, 0, s.x, s.y);
+		this->src = ML::Box2D(0, 0, s.x, s.y);
+
+		//寄せ
+		if (Left==xPos)
+		{
+			this->pos.x = 0;
+		}
+		else if(Right==xPos)
+		{
+			this->pos.x = (float)ge->screen2DWidth - s.x;
+
+		}
+		else
+		{
+			this->pos.x = (ge->screen2DWidth - s.x)/2.0f;
+		}
+		//反転
+		if (true==xRevers)
+		{
+			this->src.x = s.x;
+			this->src.w = -s.x;
+		}
+		if (true == yRevers)
+		{
+			this->src.y = s.y;
+			this->src.h= -s.y;
+		}
+
+	}
 	//★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
 	//以下は基本的に変更不要なメソッド
 	//★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
