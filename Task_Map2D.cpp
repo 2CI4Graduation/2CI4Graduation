@@ -31,22 +31,22 @@ namespace  Map2D
 		//★データ初期化
 		this->render2D_Priority[1] = 0.9f;
 		this->imageName = "MapChipImg";
-		//マップのゼロクリア
-		for (int y = 0; y < 100; ++y) {
-			for (int x = 0; x < 100; ++x) {
-				this->arr[y][x] = 0;
-			}
-		}
-		this->sizeX = 0;
-		this->sizeY = 0;
-		this->hitBase = ML::Box2D(0, 0, 0, 0);
+		////マップのゼロクリア
+		//for (int y = 0; y < 100; ++y) {
+		//	for (int x = 0; x < 100; ++x) {
+		//		this->arr[y][x] = 0;
+		//	}
+		//}
+		//this->sizeX = 0;
+		//this->sizeY = 0;
+		//this->hitBase = ML::Box2D(0, 0, 0, 0);
 
-		//マップチップ情報の初期化
-		for (int c = 0; c < 16; ++c) {
-			int  x = (c % 8);
-			int  y = (c / 8);
-			this->chip[c] = ML::Box2D(x * 32, y * 32, 32, 32);
-		}
+		////マップチップ情報の初期化
+		//for (int c = 0; c < 16; ++c) {
+		//	int  x = (c % 8);
+		//	int  y = (c / 8);
+		//	this->chip[c] = ML::Box2D(x * 32, y * 32, 32, 32);
+		//}
 
 		//★タスクの生成
 
@@ -104,16 +104,19 @@ namespace  Map2D
 		ex = (isr.right - 1) / 32;
 		ey = (isr.bottom - 1) / 32;
 
-		//画面内の範囲だけ描画
-		for (int y = sy; y <= ey; ++y) {
-			for (int x = sx; x <= ex; ++x) {
-				ML::Box2D  draw(x * 32, y * 32, 32, 32);
-				//スクロール対応
-				draw.Offset(-ge->camera2D.x, -ge->camera2D.y);
+		////画面内の範囲だけ描画
+		//for (int y = sy; y <= ey; ++y) {
+		//	for (int x = sx; x <= ex; ++x) {
+		//		ML::Box2D  draw(x * 32, y * 32, 32, 32);
+		//		//スクロール対応
+		//		draw.Offset(-ge->camera2D.x, -ge->camera2D.y);
 
-				DG::Image_Draw(this->imageName, draw, this->chip[this->arr[y][x]]);
-			}
-		}
+		//		DG::Image_Draw(this->imageName, draw, this->chip[this->arr[y][x]]);
+		//	}
+		//}
+		ML::Box2D draw(0, 0, 1920,1080);
+		ML::Box2D src(0, 0, 1010,760);
+		DG::Image_Draw(this->imageName, draw, src);
 	}
 	//-------------------------------------------------------------------
 	//マップファイル読み込み(今は仮処理）
@@ -131,21 +134,23 @@ namespace  Map2D
 		DG::Image_Create(this->imageName, chipFilePath);
 
 
-		//マップ配列サイズの読み込み
-		fin >> this->sizeX >> this->sizeY;
-		this->hitBase = ML::Box2D(0, 0, this->sizeX * 32, this->sizeY * 32);
+		//マップサイズの読み込み
+		int mx, my, mw, mh;
+		fin >> mx >> my >> mw >> mh;
+		/*this->hitBase = */ML::Box2D(mx, my, mw, mh);
 
-		//マップ配列データの読み込み
-		for (int y = 0; y < this->sizeY; ++y) {
-			for (int x = 0; x < this->sizeX; ++x) {
-				fin >> this->arr[y][x];
-			}
-		}
+		////マップ配列データの読み込み
+		//for (int y = 0; y < this->sizeY; ++y) {
+		//	for (int x = 0; x < this->sizeX; ++x) {
+		//		fin >> this->arr[y][x];
+		//	}
+		//}
 		fin.close();
 
 		return  true;
 	}
 	//-------------------------------------------------------------------
+	
 	//あたり判定
 	bool Object::CheckHit(const  ML::Box2D&  h_)
 	{
@@ -168,41 +173,41 @@ namespace  Map2D
 		ex = (r.right - 1) / 32;
 		ey = (r.bottom - 1) / 32;
 
-		//範囲内の障害物を探す
-		for (int y = sy; y <= ey; ++y) {
-			for (int x = sx; x <= ex; ++x) {
-				if (8 <= this->arr[y][x]) {
-					return true;
-				}
-			}
-		}
+		////範囲内の障害物を探す
+		//for (int y = sy; y <= ey; ++y) {
+		//	for (int x = sx; x <= ex; ++x) {
+		//		if (8 <= this->arr[y][x]) {
+		//			return true;
+		//		}
+		//	}
+		//}
 		return false;
 	}
 	//-------------------------------------------------------------------
 	//マップ外を見せないようにカメラを位置調整する
-	void  Object::AjastCameraPos()
-	{
-		//カメラとマップの範囲を用意
-		RECT  c = {
-			ge->camera2D.x,
-			ge->camera2D.y,
-			ge->camera2D.x + ge->camera2D.w,
-			ge->camera2D.y + ge->camera2D.h };
-		RECT  m = {
-			this->hitBase.x,
-			this->hitBase.y,
-			this->hitBase.x + this->hitBase.w,
-			this->hitBase.y + this->hitBase.h };
+	//void  Object::AjastCameraPos()
+	//{
+	//	//カメラとマップの範囲を用意
+	//	RECT  c = {
+	//		ge->camera2D.x,
+	//		ge->camera2D.y,
+	//		ge->camera2D.x + ge->camera2D.w,
+	//		ge->camera2D.y + ge->camera2D.h };
+	//	RECT  m = {
+	//		this->hitBase.x,
+	//		this->hitBase.y,
+	//		this->hitBase.x + this->hitBase.w,
+	//		this->hitBase.y + this->hitBase.h };
 
-		//カメラの位置を調整
-		if (c.right  > m.right) { ge->camera2D.x = m.right - ge->camera2D.w; }
-		if (c.bottom > m.bottom) { ge->camera2D.y = m.bottom - ge->camera2D.h; }
-		if (c.left < m.left) { ge->camera2D.x = m.left; }
-		if (c.top  < m.top) { ge->camera2D.y = m.top; }
-		//マップがカメラより小さい場合
-		if (this->hitBase.w < ge->camera2D.w) { ge->camera2D.x = m.left; }
-		if (this->hitBase.h < ge->camera2D.h) { ge->camera2D.y = m.top; }
-	}
+	//	//カメラの位置を調整
+	//	if (c.right  > m.right) { ge->camera2D.x = m.right - ge->camera2D.w; }
+	//	if (c.bottom > m.bottom) { ge->camera2D.y = m.bottom - ge->camera2D.h; }
+	//	if (c.left < m.left) { ge->camera2D.x = m.left; }
+	//	if (c.top  < m.top) { ge->camera2D.y = m.top; }
+	//	//マップがカメラより小さい場合
+	//	if (this->hitBase.w < ge->camera2D.w) { ge->camera2D.x = m.left; }
+	//	if (this->hitBase.h < ge->camera2D.h) { ge->camera2D.y = m.top; }
+	//}
 	//★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
 	//以下は基本的に変更不要なメソッド
 	//★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★

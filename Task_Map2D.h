@@ -57,6 +57,6 @@ namespace  Map2D
 		//あたり判定
 		bool CheckHit(const  ML::Box2D&  h_);
 		//マップ外を見せないようにカメラを位置調整する
-		void  AjastCameraPos();
+		//void  AjastCameraPos();
 	};
 }
