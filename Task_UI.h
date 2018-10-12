@@ -1,15 +1,15 @@
 #pragma warning(disable:4996)
 #pragma once
 //-------------------------------------------------------------------
-//プレイヤ
+//UI
 //-------------------------------------------------------------------
-#include "BChara.h"
+#include "GameEngine_Ver3_7.h"
 
-namespace  Player
+namespace  UI
 {
 	//タスクに割り当てるグループ名と固有名
-	const  string  defGroupName("プレイヤ");	//グループ名
-	const  string  defName("仮");				//タスク名
+	const  string  defGroupName(		"UI");	//グループ名
+	const  string  defName(				"NoName");	//タスク名
 	//-------------------------------------------------------------------
 	class  Resource
 	{
@@ -23,10 +23,10 @@ namespace  Player
 		static   WP  instance;
 		static  Resource::SP  Create();
 		//共有する変数はここに追加する
-		string		imageName;
+		string					imageName;
 	};
 	//-------------------------------------------------------------------
-	class  Object : public  BChara
+	class  Object : public  BTask
 	{
 	//変更不可◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆◆
 	public:
@@ -46,24 +46,10 @@ namespace  Player
 		bool  Finalize();		//「終了」タスク消滅時に１回だけ行う処理
 	//変更可◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇
 	public:
-		string		controllerName;				//コントローラ宣言
-		bool		hitFlag;					//
-		int			neutral_height;				//通常時の判定矩形高さ
-		int			squat_height;				//しゃがみ時の判定矩形高さ
-
-		float		pow_jump;					//ジャンプ初速
-		float		speed_fall;					//降下速度
-		float		max_FallSpeed;				//最大降下速度
-		//メソッド
-
-		//接触時の応答処理
-		//引数	：	（攻撃側,攻撃情報,与える無敵時間）
-		void Recieved(const BChara* from_, AttackInfo at_, const int&);
-		//思考
-		void Think();
-		//行動
-		void Move();
-		//アニメーション
-		BChara::DrawInfo Anim();
+		//追加したい変数・メソッドはここに追加する
+		/*「変数宣言を書く」
+		「追加メソッドを書く」*/
+		int					timeCnt;
+		int					downCnt;
 	};
 }

@@ -3,6 +3,7 @@
 //-------------------------------------------------------------------
 #include  "MyPG.h"
 #include  "Task_Player.h"
+#include  "Task_Map2D.h"
 
 namespace  Player
 {
@@ -11,8 +12,8 @@ namespace  Player
 	//リソースの初期化
 	bool  Resource::Initialize()
 	{
-		this->imageName = "playerImg";
-		DG::Image_Create(this->imageName, "./data/image/Image_Load.png");
+		this->imageName = "PlayerImg";
+		DG::Image_Create(this->imageName, "./data/image/HitTest.bmp");
 		return true;
 	}
 	//-------------------------------------------------------------------
@@ -32,14 +33,17 @@ namespace  Player
 		this->res = Resource::Create();
 
 		//★データ初期化
-		this->speed = 0.0f;															//速度
-		this->gauge_Extra = 0.0f;													//EXゲージ量
-		this->add_Extra=0.0f;														//EXゲージ増加量
-		this->pos = ML::Vec2(float(ge->screenWidth/2), float(ge->screenHeight/2));	//座標
-		this->moveVec=ML::Vec2(0.0f,0.0f);											//移動量
-		this->gravity = ML::Gravity(32);											//重力加速度
-		this->hitBase=ML::Box2D(-46,-46,92,92);										//判定矩形
-		this->controllerName="P1";													//コントローラー宣言
+		this->render2D_Priority[1] = 0.5f;			//描画順
+		this->angle_LR = Right;						//左右
+		this->motion = Stand;						//状態管理
+		this->controllerName = "P1";				//コントローラ宣言
+		this->hitFlag = true;						//
+		this->pow_jump = -7.5f;						//ジャンプ初速
+		this->speed_fall = 0.5f;					//落下速度加算量
+		this->max_FallSpeed = 1.5f;					//落下速度上限
+		this->hitBase = ML::Box2D(32, 64, 64, 128);	//判定矩形
+		this->neutral_height = 128;					//通常時の判定矩形高さ
+		this->squat_height = 64;
 
 		//★タスクの生成
 
@@ -64,6 +68,13 @@ namespace  Player
 	{
 		this->moveCnt++;
 		this->animCnt++;
+		auto  in = DI::GPad_GetState(this->controllerName);
+		ML::Vec2  est(0, 0);
+
+		this->CheckMove(est);
+		//足元接触判定
+		this->hitFlag = this->CheckFoot();
+		this->pos += this->moveVec;
 		this->Think();
 		this->Move();
 	}
@@ -71,38 +82,28 @@ namespace  Player
 	//「２Ｄ描画」１フレーム毎に行う処理
 	void  Object::Render2D_AF()
 	{
-		ML::Box2D draw = this->hitBase.OffsetCopy(this->pos);
-		ML::Box2D src(0, 0, 92, 92);
+		ML::Box2D  draw = this->hitBase.OffsetCopy(this->pos);
+		ML::Box2D  src(0, 0, 100, 100);
+
+		//	接触の有無に合わせて画像を変更
+		if (true == this->hitFlag) {
+			src.Offset(100, 0);
+		}
+		//スクロール対応
+		draw.Offset(-ge->camera2D.x, -ge->camera2D.y);
 		DG::Image_Draw(this->res->imageName, draw, src);
 	}
-	//-------------------------------------------------------------------
-	//モーションを更新（変更なしの場合	false)
-	bool  Object::UpDateMotion(const Motion  nm_)
-	{
-		if (nm_ == this->motion)
-		{
-			return false;
-		}
-		else
-		{
-			this->motion = nm_;
-			this->moveCnt = 0;
-			this->animCnt = 0;
-			return true;
-		}
-	}
 	//接触時の応答処理
-	//引数	：	（攻撃側,攻撃情報構造体,無敵時間）
-	void Object::Recieved(const BChara* from_, const AttackInfo at_, const int& unhitTime_)
+	//引数	：	（攻撃側,攻撃情報,与える無敵時間）
+	void Object::Recieved(const BChara* from_, AttackInfo at_, const int& unHit_)
 	{
-		//無敵時間があれば攻撃を受けない
-		if (this->unhitCnt > 0)
+		if (this->unHitCnt > 0)
 		{
-			return;
+			return;//無敵時間
 		}
-		//外部から無敵時間を指定
-		this->unhitCnt = unhitTime_;
-		//やられ状態にする
+		//無敵時間を受け取る
+		this->unHitCnt = unHit_;
+		//ダメージ状態にする
 		this->UpDateMotion(Damage);
 	}
 	//思考
@@ -118,6 +119,10 @@ namespace  Player
 			break;
 		case Stand:
 			if (in.B1.down) { nm = Takeoff; }
+			if (in.LStick.D.on) { nm = Squat; }
+			break;
+		case Squat:
+			if (in.LStick.D.off) { nm = Stand; }
 			break;
 		case Gu:
 			break;
@@ -132,12 +137,13 @@ namespace  Player
 			if (this->moveVec.y >= 0) { nm = Fall; }
 			break;
 		case Fall:
-			if (this->CheckFoot()) { nm = Landing; }
+			if (this->moveVec.y==0.0f) { nm = Landing; }
 			break;
 		case Landing:
 			if (this->moveCnt >= 8) { nm = Stand; }
 			break;
 		case Damage:
+			if (this->unHitCnt <= 0) { nm = Stand; }
 			break;
 		}
 		this->UpDateMotion(nm);
@@ -145,20 +151,15 @@ namespace  Player
 	void Object::Move()
 	{
 		//重力加速
-		switch (this->motion) {
-		default:
-			//上昇中もしくは足元に地面が無い
-			if (this->moveVec.y < 0 ||
-				this->CheckFoot() == false) {
-				this->moveVec.y = min(this->moveVec.y + this->gravity, this->max_FallSpeed);
-			}
-			//地面に接触している
-			else {
-				this->moveVec.y = 0.0f;
-			}
-			break;
-			//以下、重力に影響されない状態
-
+			//仮に画面下端で止まる
+			//重力
+		if (this->pos.y <= 720 - this->hitBase.h / 2)
+		{
+			this->moveVec.y += this->speed_fall;
+		}
+		else
+		{
+			this->moveVec.y = 0.0f;
 		}
 		//コントローラの宣言
 		auto in = DI::GPad_GetState(this->controllerName);
@@ -168,6 +169,12 @@ namespace  Player
 		default:
 			break;
 		case Stand:
+			this->pos.y = float(720 - this->hitBase.h / 2);
+			this->hitBase.h = this->neutral_height;
+			break;
+		case Squat:
+			this->pos.y = 720;
+			this->hitBase.h = this->squat_height;
 			break;
 		case Gu:
 			break;
@@ -180,7 +187,7 @@ namespace  Player
 		case Jump:
 			if (this->moveCnt == 0)
 			{
-				this->moveVec.y = this->pow_Jump;
+				this->moveVec.y = this->pow_jump;
 			}
 			break;
 		case Fall:
@@ -198,8 +205,9 @@ namespace  Player
 	{
 		//デフォルトの値を用意
 		ML::Color dc(1, 1, 1, 1);
-		Object::DrawInfo imageTable[] = {
-			{this->hitBase,ML::Box2D(0,0,0,0),dc}
+		Object::DrawInfo imageTable[] = 
+		{
+			{ this->hitBase,ML::Box2D(0,0,0,0),dc }
 		};
 		Object::DrawInfo rtv;
 		switch (this->motion)
@@ -227,53 +235,6 @@ namespace  Player
 		}
 		return rtv;
 	}
-	//めり込まない移動処理
-	//void Object::CheckMove(ML::Vec2&  e_)
-	//{
-	//	//マップが存在するか調べてからアクセス
-	//	auto   map = ge->GetTask_One_GN<Map2D::Object>("フィールド", "マップ");
-	//	if (nullptr == map) { return; }//マップが無ければ判定しない(出来ない）
-
-	//								   //横軸に対する移動
-	//	while (e_.x != 0) {
-	//		float  preX = this->pos.x;
-	//		if (e_.x >= 1) { this->pos.x += 1;		e_.x -= 1; }
-	//		else if (e_.x <= -1) { this->pos.x -= 1;		e_.x += 1; }
-	//		else { this->pos.x += e_.x;		e_.x = 0; }
-	//		ML::Box2D  hit = this->hitBase.OffsetCopy(this->pos);
-	//		if (true == map->CheckHit(hit)) {
-	//			this->pos.x = preX;		//移動をキャンセル
-	//			break;
-	//		}
-	//	}
-	//	//縦軸に対する移動
-	//	while (e_.y != 0) {
-	//		float  preY = this->pos.y;
-	//		if (e_.y >= 1) { this->pos.y += 1;		e_.y -= 1; }
-	//		else if (e_.y <= -1) { this->pos.y -= 1;		e_.y += 1; }
-	//		else { this->pos.y += e_.y;		e_.y = 0; }
-	//		ML::Box2D  hit = this->hitBase.OffsetCopy(this->pos);
-	//		if (true == map->CheckHit(hit)) {
-	//			this->pos.y = preY;		//移動をキャンセル
-	//			break;
-	//		}
-	//	}
-	//}
-	//-----------------------------------------------------------------------------
-	//足元接触判定
-	//bool  Object::CheckFoot()
-	//{
-	//	//あたり判定を基にして足元矩形を生成
-	//	ML::Box2D  foot(this->hitBase.x,
-	//		this->hitBase.y + this->hitBase.h,
-	//		this->hitBase.w,
-	//		1);
-	//	foot.Offset(this->pos);
-
-	//	auto   map = ge->GetTask_One_GN<Map2D::Object>("フィールド", "マップ");
-	//	if (nullptr == map) { return false; }//マップが無ければ判定しない(出来ない）
-	//	return map->CheckHit(foot);
-	//}
 	//★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
 	//以下は基本的に変更不要なメソッド
 	//★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★

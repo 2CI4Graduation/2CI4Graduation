@@ -1,26 +1,25 @@
 //-------------------------------------------------------------------
-//ゲーム本編
+//UI
 //-------------------------------------------------------------------
 #include  "MyPG.h"
-#include  "Task_Game.h"
-#include  "Task_Ending.h"
-#include  "Task_Map2D.h"
-#include  "Task_Player.h"
-#include  "Task_EventEngine.h"
 #include  "Task_UI.h"
-namespace  Game
+
+namespace  UI
 {
 	Resource::WP  Resource::instance;
 	//-------------------------------------------------------------------
 	//リソースの初期化
 	bool  Resource::Initialize()
 	{
+		this->imageName = "UI";
+		DG::Image_Create(this->imageName, "./data/image/UI.png");
 		return true;
 	}
 	//-------------------------------------------------------------------
 	//リソースの解放
 	bool  Resource::Finalize()
 	{
+		DG::Image_Erase(this->imageName);
 		return true;
 	}
 	//-------------------------------------------------------------------
@@ -31,25 +30,15 @@ namespace  Game
 		__super::Initialize(defGroupName, defName, true);
 		//リソースクラス生成orリソース共有
 		this->res = Resource::Create();
+		this->render2D_Priority[1] = 0.8f;
+		this->timeCnt = 0;
+		this->downCnt = 99;
 
+		DG::Font_Create("FontA", "HGP行書体", 70, 72);
 		//★データ初期化
-		ge->camera2D = ML::Box2D(-200, -100, 480, 270);//取りあえず初期値設定
-		ge->evFlags.clear();
+		
 		//★タスクの生成
-		//マップの生成
-		/*if (auto ev = EventEngine::Object::Create_Mutex())
-		{
-			ev->Set("./data/event/map0.txt");
-		}*/
-		auto  m = Map2D::Object::Create(true);
-		m->Load("./data/Map/Map0.txt");
-		//プレイヤの生成
-		auto  pl = Player::Object::Create(true);
-		pl->pos.x = 480 / 2;
-		pl->pos.y = 270 * 2 / 3;
 
-		//UIの生成
-		auto ui = UI::Object::Create(true);
 		return  true;
 	}
 	//-------------------------------------------------------------------
@@ -57,16 +46,10 @@ namespace  Game
 	bool  Object::Finalize()
 	{
 		//★データ＆タスク解放
-		ge->KillAll_G("フィールド");
-		ge->KillAll_G("プレイヤ");
-		ge->KillAll_G("イベント");
-		ge->KillAll_G("メッセージ表示枠");
-		ge->KillAll_G("イベント画像");
-		ge->KillAll_G("UI");
+		DG::Font_Erase("FontA");
 
 		if (!ge->QuitFlag() && this->nextTaskCreate) {
 			//★引き継ぎタスクの生成
-			auto  nextTask = Ending::Object::Create(true);
 		}
 
 		return  true;
@@ -75,16 +58,28 @@ namespace  Game
 	//「更新」１フレーム毎に行う処理
 	void  Object::UpDate()
 	{
-		auto in = DI::GPad_GetState("P1");
-		if (in.ST.down) {
-			//自身に消滅要請
-			this->Kill();
+		this->timeCnt++;
+		if (timeCnt == 60)
+		{
+			this->downCnt--;
+			this->timeCnt = 0;
+		}
+		if (this->downCnt <= 0)
+		{
+			this->downCnt = 0;
 		}
 	}
 	//-------------------------------------------------------------------
 	//「２Ｄ描画」１フレーム毎に行う処理
 	void  Object::Render2D_AF()
 	{
+		ML::Box2D draw(0, 0, 1920, 1080);
+		ML::Box2D src(0, 0, 1920, 1080);
+		DG::Image_Draw(this->res->imageName, draw, src);
+
+		ML::Box2D textBox(1920/2-70, 120, 480, 100);
+		string text = to_string(this->downCnt);
+		DG::Font_Draw("FontA", textBox, text, ML::Color(1, 1, 1, 1));
 	}
 
 	//★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★

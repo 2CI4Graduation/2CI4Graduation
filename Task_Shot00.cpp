@@ -1,26 +1,32 @@
 //-------------------------------------------------------------------
-//ゲーム本編
+//
 //-------------------------------------------------------------------
 #include  "MyPG.h"
-#include  "Task_Game.h"
-#include  "Task_Ending.h"
-#include  "Task_Map2D.h"
+#include  "Task_Shot00.h"
 #include  "Task_Player.h"
-#include  "Task_EventEngine.h"
-#include  "Task_UI.h"
-namespace  Game
+#include  "Task_Map2D.h"
+
+#include  "BChara.h"
+
+
+
+namespace  Shot00
 {
 	Resource::WP  Resource::instance;
 	//-------------------------------------------------------------------
 	//リソースの初期化
 	bool  Resource::Initialize()
 	{
+		this->imageName = "Shot00Img";
+		DG::Image_Create(this->imageName, "./data/image/Shot00.png");
+		
 		return true;
 	}
 	//-------------------------------------------------------------------
 	//リソースの解放
 	bool  Resource::Finalize()
 	{
+		DG::Image_Erase(this->imageName);
 		return true;
 	}
 	//-------------------------------------------------------------------
@@ -33,23 +39,15 @@ namespace  Game
 		this->res = Resource::Create();
 
 		//★データ初期化
-		ge->camera2D = ML::Box2D(-200, -100, 480, 270);//取りあえず初期値設定
-		ge->evFlags.clear();
+		this->render2D_Priority[1] = 0.4f;
+		/*this->pos.x = 0;
+		this->pos.y = 0;*/
+		this->hitBase = ML::Box2D(-8, -8, 16, 16);
+		this->hp = 5;
+		/*this->moveVec = ML::Vec2(0, 0);
+		this->moveCnt = 0;*/
 		//★タスクの生成
-		//マップの生成
-		/*if (auto ev = EventEngine::Object::Create_Mutex())
-		{
-			ev->Set("./data/event/map0.txt");
-		}*/
-		auto  m = Map2D::Object::Create(true);
-		m->Load("./data/Map/Map0.txt");
-		//プレイヤの生成
-		auto  pl = Player::Object::Create(true);
-		pl->pos.x = 480 / 2;
-		pl->pos.y = 270 * 2 / 3;
 
-		//UIの生成
-		auto ui = UI::Object::Create(true);
 		return  true;
 	}
 	//-------------------------------------------------------------------
@@ -57,16 +55,10 @@ namespace  Game
 	bool  Object::Finalize()
 	{
 		//★データ＆タスク解放
-		ge->KillAll_G("フィールド");
-		ge->KillAll_G("プレイヤ");
-		ge->KillAll_G("イベント");
-		ge->KillAll_G("メッセージ表示枠");
-		ge->KillAll_G("イベント画像");
-		ge->KillAll_G("UI");
+
 
 		if (!ge->QuitFlag() && this->nextTaskCreate) {
 			//★引き継ぎタスクの生成
-			auto  nextTask = Ending::Object::Create(true);
 		}
 
 		return  true;
@@ -75,16 +67,112 @@ namespace  Game
 	//「更新」１フレーム毎に行う処理
 	void  Object::UpDate()
 	{
-		auto in = DI::GPad_GetState("P1");
-		if (in.ST.down) {
-			//自身に消滅要請
+		this->moveCnt++;
+		//限界の時間を迎えたら消滅
+		if (this->moveCnt>=30)
+		{
+			//消滅申請	
 			this->Kill();
+			return;
+
 		}
+		//移動
+
+		this->pos += this->moveVec;
+
+		//移動先で障害物に接触したら消滅
+		//マップが存在するか調べてからアクセス
+		if (auto map = ge->GetTask_One_GN<Map2D::Object>("フィールド", "マップ"))
+		{
+			ML::Box2D hit = this->hitBase.OffsetCopy(this->pos);
+			if (true==map->CheckHit(hit))
+			{
+				this->Kill();
+
+				//とりあえずほし
+				for (int  c = 0; c <4; c++)
+				{
+					auto eff = Effect00::Object::Create(true);
+					eff->pos = this->pos;
+				}
+				return;
+			}
+			
+		}
+		//敵対象と衝突判定＆ダメージを与える処理
+		//{
+		//ML::Box2D me = this->hitBase.OffsetCopy(this->pos);
+		//auto targets = ge->GetTask_Group_G<BChara>("敵");
+
+		//for (auto it = targets->begin(); it != targets->end(); it++)
+		//{
+		//	//相手に接触の有無を確認させる
+		//	if ((*it)->CheckHit(me))
+		//	{
+		//		//相手にダメージの処理を行わせる
+		//		BChara::AttackInfo at = { this->hp,0,0 };
+		//		(*it)->Received(this, at);
+		//		
+
+		//		//とりあえずほし
+		//		for (int c = 0; c <4; c++)
+		//		{
+		//			auto eff = Effect00::Object::Create(true);
+		//			eff->pos = this->pos;
+		//		}
+		//		this->Kill();
+		//		break;
+		//	}
+
+		BChara::AttackInfo at = { this->hp,0,0 };
+		if (true == this->Attack_Std("敵", at))
+		{
+			//接触時に自分に何かしたいなら
+			//とりあえずほし
+					for (int c = 0; c <4; c++)
+					{
+						auto eff = Effect00::Object::Create(true);
+						eff->pos = this->pos;
+					}
+					this->Kill();
+		}
+		
+	
+
+	//	ML::Box2D me = this->hitBase.OffsetCopy(this->pos);
+	//	////敵をすべて抽出
+	//	auto target = ge->GetTask_Group_G<Enemy00::Object>("敵");
+	//	for (auto it = target->begin(); it!=target->end(); it++){
+	///*	for (auto it = ge->qa_Enemys->begin(); it != ge->qa_Enemys->end(); it++)
+	//	{
+	//		if ((*it)->CheckState() == BTask::eKill) { continue; }
+	//	{*/
+	//		ML::Box2D you = (*it)->hitBase.OffsetCopy((*it)->pos);
+	//		if (true == you.Hit(me))
+	//		{
+	//			(*it)->Kill();
+	//			this->Kill();
+
+	//			//とりあえずほし
+	//			for (int c = 0; c <4; c++)
+	//			{
+	//				auto eff = Effect00::Object::Create(true);
+	//				eff->pos = this->pos;
+	//			}
+	//			break;
+	//		}
+	//	}
 	}
 	//-------------------------------------------------------------------
 	//「２Ｄ描画」１フレーム毎に行う処理
 	void  Object::Render2D_AF()
 	{
+		ML::Box2D draw(-8, -8, 16, 16);
+		draw.Offset(this->pos);
+		ML::Box2D src(0, 0, 32, 32);
+		//スクロール対応
+		draw.Offset(-ge->camera2D.x, -ge->camera2D.y);
+		DG::Image_Draw(this->res->imageName, draw, src);
 	}
 
 	//★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★

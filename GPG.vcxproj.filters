@@ -151,6 +151,9 @@
     <ClCompile Include="Dm2008_Ver1_3.cpp">
       <Filter>MyPG</Filter>
     </ClCompile>
+    <ClCompile Include="Task_UI.cpp">
+      <Filter>MyPG\Tasks\Game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="myLib.h">
@@ -239,6 +242,9 @@
     </ClInclude>
     <ClInclude Include="Dm2008_Ver1_3.h">
       <Filter>MyPG</Filter>
+    </ClInclude>
+    <ClInclude Include="Task_UI.h">
+      <Filter>MyPG\Tasks\Game</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
